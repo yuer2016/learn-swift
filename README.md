@@ -28,7 +28,15 @@
       - [类](#类)
       - [mutating 方法详解](#mutating-方法详解)
       - [属性](#属性)
-    - [协议和泛型](#协议和泛型)
+      - [访问控制](#访问控制)
+      - [初始化](#初始化)
+  - [值类型与引用类型](#值类型与引用类型)
+    - [值类型](#值类型)
+    - [引用类型](#引用类型)
+  - [协议和泛型](#协议和泛型)
+    - [协议](#协议)
+    - [泛型](#泛型)
+    - [扩展](#扩展)
 
 ## 基本抽象
 
@@ -72,7 +80,7 @@ print("The minimum value for a 32-bit unsigned integer is \(UInt32.min).")
 
 let numberOfPages: Int = 10 // 显式声明类型
 
-let numberOfChapters = 3    // 还是Int类型,不过是编译器推断出来的
+let numberOfChapters = 3    // 还是 Int 类型,不过是编译器推断出来的
 
 /*便捷操作符*/
 var x = 10
@@ -898,6 +906,190 @@ mutating 方法的第一个参数是self ，并以 inout 的形式传入。
 
 #### 属性
 
+属性能够把值关联到类型上，从而模拟类型所表示的实体的性质。
+属性的值可以是常量，也可以是变量。
+类、结构体和枚举都可以有属性。
 
+属性分为两种：**存储(stored)**属性和 **计算(computed)** 属性。
+存储属性可以有默认值，计算属性则根据已有信息返回某种计算结果。
 
-### 协议和泛型
+```swift
+struct Town {
+    let region = "South" //let 创建只读属性
+    var population = 5_422
+    var numberOfStoplights = 4
+
+    /*嵌套类型 （nested type）是定义在另一个类型内部的类型*/
+    enum Size {
+        case small
+        case medium
+        case large
+    }
+    
+    func printDescription() {
+        print("Population: \(population);
+               number of stoplights: \(numberOfStoplights)")
+    }
+
+    mutating func changePopulation(by amount: Int) {
+        population += amount
+    }
+
+    /*惰性加载 （lazy loading）属性的值只在第一次访问的时候才会赋值,后面不会再重新计算*/
+    lazy var townSize: Size = {
+        switch self.population {
+        case 0...10_000:
+            return Size.small
+        case 10_001...100_000:
+            return Size.medium
+        default:
+            return Size.large
+        }
+    }() 
+
+    // 计算属性
+    var townSize: Size = {
+      get {
+          switch self.population {
+          case 0...10_000:
+              return Size.small  
+          case 10_001...100_000:
+              return Size.medium
+          default:
+              return Size.large
+            }
+        }
+    } 
+}
+
+class Monster {
+    var town: Town?
+    var name = "Monster"
+
+    var victimPool: Int {
+        get {
+            return town?.population ?? 0
+        }
+
+        set(newVictimPool) {
+            town?.population = newVictimPool
+        }
+    }
+}
+
+/*Swift提供了一个有意思的特性，叫作属性观察 （property observation）。
+属性观察者会观察并响应给定属性的变化。
+属性观察对于任何自定义的存储属性和任何继承的属性都可用 */
+// 通过 willSet 观察属性即将发生的变化；
+// 通过 didSet 观察属性已经发生的变化。
+
+struct Town {
+    var population = 5_422 {
+        didSet(oldPopulation) {
+            print("The population has changed to \(population)
+                   from \(oldPopulation).")
+
+        }
+    }
+}
+
+// 类型属性属性会在同类型实例间共享。
+// 这类属性适合存储对于所有实例来说都相同的信息
+struct Town {
+    static let region = "South"
+}
+
+// 类也可以有存储类型属性和计算类型属性，语法跟结构体一样用 static 。子类不能覆盖父类的类型属性。
+// 如果希望子类能为某个属性提供自己的实现，那就用 class 关键字
+class Zombie: Monster {
+     static let region = "South"
+     class func makeSpookyNoise() -> String { 
+         return "Brains..." 
+    }
+}
+
+class Zombie: Monster {
+    override class var spookyNoise: String {
+        return "Brains..."
+    }
+    var walksWithLimp = true
+}
+```
+
+#### 访问控制
+
+| 访问层级       | 描述                                                             |
+| -------------- | ---------------------------------------------------------------- |
+| open           | 实体对模块内的所有文件以及引入了该模块的文件都可见，并且可以继承 |
+| Public         | 实体对模块内的所有文件以及引入了该模块的文件都可见               |
+| internal[默认] | 实体对模块内的文件可见                                           |
+| fileprivate    | 实体只对所在的源文件可见                                         |
+| private        | 实体只对所在的作用域可见                                         |
+
+```swift
+// 把读取方法设置为 internal ，把写入方法设置为 private
+internal private(set) var isFallingApart = false
+```
+
+#### 初始化
+
+初始化是设置类型实例的操作，包括给每个存储属性初始值，以及一些其他准备工作。
+初始化方法 （initializer）能在创建实例的同时为其赋予合适的值。
+
+```swift
+struct CustomType {
+    init(someValue: SomeType) {
+        // 初始化代码
+    }
+}
+
+class Zombie{
+  
+  init(limp: Bool, fallingApart: Bool, town: Town?, monsterName: String) {
+  }
+
+  // 用 convenience 关键字可以把初始化方法标记为便捷初始化方法。
+  // 这个关键字告诉编译器：这个初始化方法需要把一部分工作委托给另一个初始化方法，直到调用到一个指定初始化方法。
+  // 调用完成后，类的这个实例就可用了
+  convenience init(limp: Bool, fallingApart: Bool) {
+    self.init(limp: limp, fallingApart: fallingApart, town: nil, monsterName: "Fred")
+  }
+
+  // 类的必需初始化方法
+  required init(town: Town?, monsterName: String) {
+        self.town = town
+        name = monsterName
+  }
+
+  // 可失败的初始化方法
+  init?(region: String, population: Int, stoplights: Int) {
+    guard population > 0 else {
+      return nil
+    }
+    self.region = region
+    self.population = population
+    numberOfStoplights = stoplights
+  }
+
+  // 反初始化 （deinitialization）是在类的实例没用之后将其清除出内存的过程。
+  deinit {
+    print("Zombie named \(name) is no longer with us.")
+  }
+}
+```
+
+## 值类型与引用类型
+
+### 值类型
+
+### 引用类型
+
+## 协议和泛型
+
+### 协议
+
+协议 （protocol）能让你定义类型需要满足的接口。满足某个协议的类型被称为符合 （conform）这个协议。
+
+### 泛型
+
+### 扩展
