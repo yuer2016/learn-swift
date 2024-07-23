@@ -1487,4 +1487,13 @@ var myStackIterator = StackIterator(stack: myStack)
 while let value = myStackIterator.next() {
     print("got \(value)")
 }
+
+struct Stack<Element>: Sequence {
+  mutating func pushAll<S: Sequence>(_ sequence: S)
+    where S.Iterator.Element == Element {
+        for item in sequence {
+          self.push(item)
+        }      
+    }
+}
 ```
