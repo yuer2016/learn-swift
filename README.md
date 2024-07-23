@@ -33,10 +33,15 @@
   - [值类型与引用类型](#值类型与引用类型)
     - [值类型](#值类型)
     - [引用类型](#引用类型)
+    - [类和结构体差异](#类和结构体差异)
+    - [写时复制](#写时复制)
   - [协议和泛型](#协议和泛型)
     - [协议](#协议)
-    - [泛型](#泛型)
+      - [协议继承](#协议继承)
+      - [协议组合](#协议组合)
+    - [错误处理](#错误处理)
     - [扩展](#扩展)
+    - [泛型](#泛型)
 
 ## 基本抽象
 
@@ -910,7 +915,7 @@ mutating 方法的第一个参数是self ，并以 inout 的形式传入。
 属性的值可以是常量，也可以是变量。
 类、结构体和枚举都可以有属性。
 
-属性分为两种：**存储(stored)**属性和 **计算(computed)** 属性。
+属性分为两种：**存储(stored)** 属性和 **计算(computed)** 属性。
 存储属性可以有默认值，计算属性则根据已有信息返回某种计算结果。
 
 ```swift
@@ -977,7 +982,7 @@ class Monster {
     }
 }
 
-/*Swift提供了一个有意思的特性，叫作属性观察 （property observation）。
+/* Swift 提供了一个有意思的特性，叫作属性观察 （property observation）。
 属性观察者会观察并响应给定属性的变化。
 属性观察对于任何自定义的存储属性和任何继承的属性都可用 */
 // 通过 willSet 观察属性即将发生的变化；
@@ -1082,7 +1087,136 @@ class Zombie{
 
 ### 值类型
 
+```swift
+var str = "Hello, playground"
+var playgroundGreeting = str
+
+playgroundGreeting += "! How are you today?"
+str // playgroundGreeting 值改变不会带来 str 的改变
+```
+
+String 是值类型。在被赋给另一个实例或是作为参数传递给函数时，值类型总是被复制。
+Swift 的基本类型（Array 、Dictionary 、Int 、String 等）都是用结构体实现的，所以都是值类型。
+应尽量优先用 struct 实现数据建模，只有在需要的时候才用 class 。
+
 ### 引用类型
+
+```swift
+class GreekGod {
+    var name: String
+
+    init(name: String) {
+        self.name = name
+    }
+}
+
+let hecate = GreekGod(name: "Hecate")
+let anotherHecate = hecate
+
+anotherHecate.name = "AnotherHecate"
+anotherHecate.name
+hecate.name
+```
+
+对于引用来说，常量或变量都指向内存中的同一个实例。
+因此，hecate 和 anotherHecate 都指向同一个 GreekGod 的实例
+
+值类型常量和引用类型常量的行为不一样。
+声明为常量的值类型不能改变属性，即使属性在类型实现中是用 var 声明的也是一样。
+
+```swift
+struct Pantheon {
+    var chiefGod: String
+}
+let pantheon = Pantheon(chiefGod: "hecate")
+pantheon.chiefGod = "zeus" // Cannot assign to property: 'pantheon' is a 'let' constant 。
+
+// 引用类型不报错
+class Pantheon{
+  var chiefGod: String
+}
+let pantheon = Pantheon(chiefGod: "hecate")
+pantheon.chiefGod = "zeus"
+```
+
+Swift 没有在语言层面提供深复制的支持，这意味着 Swift 中的复制是浅复制。浅复制不会创建实例的不同副本，而是复制这个实例的引用。
+
+对于 Swift 中所有的基本数据类型（String 、Int 、Float 、Double 、Array 和 Dictionary ），都可以检查相等性。
+
+对于引用类型，可以用同一性运算符（ === ）检查这两个常量的同一性，从而判断它们是否指向同一个实例。
+
+### 类和结构体差异
+
+结构体和类之间的重要区别会指引选择何时使用哪个。
+由于要考虑的因素很多，从而很难定义严格的规则，但还是有一些基本指导原则。
+
+1. 如果类型需要传值，那就用结构体。这么做会确保赋值或传递到函数参数中时类型被复制。
+2. 如果类型不支持子类继承，那就用结构体。结构体不支持继承，所以不能有子类。
+3. 如果类型要表达的行为相对比较直观，而且包含一些简单值，那么考虑优先用结构体实现。有必要的话，之后可以随时把结构体改成类。
+4. 其他所有情况都用类。
+
+### 写时复制
+
+是指对值类型的底层存储的隐式共享。
+这种优化能够让某个值类型的多个实例共享同一个底层存储，也就是每个实例自己并不持有一份数据的副本；
+反之，每个实例会维护自己对同一份存储的引用。
+如果某个实例需要修改或写入存储，那么这个实例就会产生一份自己的副本。
+这意味着值类型能避免创建多余的数据副本。
+
+```swift
+fileprivate class IntArrayBuffer {
+    var storage: [Int]
+
+    init() {
+        storage = []
+    }
+
+    init(buffer: IntArrayBuffer) {
+        storage = buffer.storage
+    }
+}
+
+struct IntArray {
+    private var buffer: IntArrayBuffer
+
+    init() {
+        buffer = IntArrayBuffer()
+    }
+
+    func describe() {
+        print(buffer.storage)
+    }
+
+    private mutating func copyIfNeeded() {
+        if !isKnownUniquelyReferenced(&buffer) {
+            print("Making a copy of \(buffer.storage)")
+            buffer = IntArrayBuffer(buffer: buffer)
+        }
+    }
+
+    mutating func insert(_ value: Int, at index: Int) {
+        copyIfNeeded()
+        buffer.storage.insert(value, at: index)
+    }
+
+    mutating func append(_ value: Int) {
+        copyIfNeeded()
+        buffer.storage.append(value)
+    }
+
+    mutating func remove(at index: Int) {
+        copyIfNeeded()
+        buffer.storage.remove(at: index)
+    }
+}
+
+var integers = IntArray()
+
+integers.append(1)
+integers.append(2)
+integers.append(4)
+integers.describe()
+```
 
 ## 协议和泛型
 
@@ -1090,6 +1224,267 @@ class Zombie{
 
 协议 （protocol）能让你定义类型需要满足的接口。满足某个协议的类型被称为符合 （conform）这个协议。
 
-### 泛型
+```swift
+protocol TabularDataSource {
+  /* { get } 语法,表示这些属性可读。如果属性需要被读写，那就要用{ get set } */
+  var numberOfRows: Int { get }
+  var numberOfColumns: Int { get }
+
+  func label(forColumn column: Int) -> String
+  func itemFor(row: Int, column: Int) -> String
+}
+
+struct Department: TabularDataSource {
+    let name: String
+    var people = [Person]()
+
+    init(name: String) {
+        self.name = name
+    }
+
+    mutating func add(_ person: Person) {
+        people.append(person)
+    }
+
+    var numberOfRows: Int {
+        return people.count
+    }
+
+    func label(forColumn column: Int) -> String {
+        switch column {
+          case 0: return "Employee Name"
+          case 1: return "Age"
+          case 2: return "Years of Experience"
+          default: fatalError("Invalid column!")
+        }
+    }
+
+    func itemFor(row: Int, column: Int) -> String {
+        let person = people[row]
+        switch column {
+          case 0: return person.name
+          case 1: return String(person.age)
+          case 2: return String(person.yearsOfExperience)
+        }
+    }        
+}    
+```
+
+1. 哪些类型可以符合协议？
+2. 一个类型可以符合多个协议吗？
+3. 一个类可以在有父类的同时符合协议吗？
+
+所有的类型都可以符合协议。刚才我们让一个结构体（Department）符合了一个协议。
+枚举和类也可以符合协议。
+声明枚举符合协议的语法跟结构体完全一样：类型声明后跟一个冒号和协议名。
+一个类型也可以符合多个协议。
+如果类有父类，那么父类的名字在前，后跟协议（或者多个协议）。
+
+```swift
+class ClassName: SuperClass, ProtocolOne, ProtocolTwo {
+}
+```
+
+#### 协议继承
+
+Swift支持协议继承 （protocol inheritance）。
+继承另一个协议的协议要求符合的类型提供它本身及其所继承协议的所有属性和方法。
+这跟类的继承不同：类的继承定义的是父类和子类之间的紧密联系，而协议继承只是把父协议的需求添加到子协议上。
+
+```swift
+protocol Animal {
+    func eat()
+}
+
+protocol Speakable {
+    func speak()
+}
+
+protocol Pet: Animal, Speakable {
+    func play()
+}
+```
+
+#### 协议组合
+
+```swift
+func printTable(dataSource: TabularDataSource & CustomStringConvertible) {
+    print("Table: \(dataSource.description)")
+}
+
+protocol Toggleable {
+    mutating func toggle()
+}
+```
+
+协议组合的语法用关键字 & 中缀操作符告诉编译器，把多个协议组合成了单个的需求。
+
+### 错误处理
+
+可能发生的错误分为两大类：
+
+1. 可恢复的错误(recoverable error)
+2. 不可恢复的错误(nonrecoverable error)
+
+```swift
+
+```
+
+Swift 的设计理念是鼓励写安全、易读的代码，它的错误处理系统也一样。
+任何可能失败的函数都应该用 throws 标记。
+
+Swift 还需要把所有可能失败的函数调用用 try 标记。
+在把一个函数标记为 throws 时，其实是把返回值类型从正常的类型变为要么是正常返回的类型，要么是 Error 协议的实例。
+
+带 throws 的函数不会声明自己会抛出什么样的错误。这样会产生两个实际的影响:
+
+1. 不需要修改函数的 API 就可以随意添加潜在的 Error 。
+2. 在用 catch 处理错误时，必须总是准备好处理未知的错误类型。
 
 ### 扩展
+
+Swift 提供一个叫扩展 （extension）的特性, 扩展能让你给已有的类型添加功能，可以用来扩展结构体、枚举和类。
+对类型的扩展支持以下几种能力：
+
+1. 添加计算属性；
+2. 添加新初始化方法；
+3. 使类型符合协议；
+4. 添加新方法；
+5. 添加嵌入类型
+
+```swift
+typealias Velocity = Double
+
+extension Velocity {
+    var kph: Velocity { return self * 1.60934 }
+    var mph: Velocity { return self }
+}
+
+protocol Vehicle {
+  var topSpeed: Velocity { get }
+  var numberOfDoors: Int { get }
+  var hasFlatbed: Bool { get }
+}
+
+struct Car {
+    let make: String
+    let model: String
+    let year: Int
+    let color: String
+    let nickname: String
+    var gasLevel: Double { 
+      willSet {
+            precondition(newValue <= 1.0 && newValue >= 0.0,
+                         "New value must be between 0 and 1.")
+      }
+    }  
+}
+
+// 扩展协议
+extension Car: Vehicle {
+  var topSpeed: Velocity { return 180 }
+  var numberOfDoors: Int { return 4 }
+  var hasFlatbed: Bool { return false }
+}
+
+// 扩展初始化函数
+extension Car {
+    init(make: String, model: String, year: Int) {
+      self.init(make: make,
+            model: model,
+            year: year,
+            color: "Black",
+            nickname: "N/A",
+            gasLevel: 1.0)
+    }
+}
+
+// 扩展嵌套类型
+extension Car {
+  enum Kind {
+    case coupe, sedan
+  }
+}
+
+// 扩展方法
+extension Car {
+    mutating func emptyGas(by amount: Double) {
+        precondition(amount <= 1 && amount > 0,
+                     "Amount to remove must be between 0 and 1.")
+        gasLevel -= amount
+    }
+
+    mutating func fillGas() {
+      gasLevel = 1.0
+    }
+}
+
+var c = Car(make: "Ford", model: "Fusion", year: 2013)
+```
+
+### 泛型
+
+泛型 （generics）让我们写出的类型和函数可以使用对于我们或编译器都未知的类型。
+Swift 用到的很多内建类型（包括可空类型、数组和字典）都是用泛型实现的。
+
+```swift
+struct Stack<Element> {
+    var items = [Element]()
+
+    mutating func push(_ newItem: Element) {
+        items.append(newItem)
+    }
+
+    mutating func pop() -> Element? {
+        guard !items.isEmpty else { 
+          return nil
+        }
+        return items.removeLast()
+    }
+}
+
+// 泛型方法
+func myMap<T,U>(_ items: [T], _ f: (T) -> (U)) -> [U] {
+    var result = [U]()
+
+    for item in items {
+        result.append(f(item))
+    }
+
+    return result
+}
+
+let strings = ["one", "two", "three"]
+let stringLengths = myMap(strings) { $0.characters.count }
+print(stringLengths) // 打印[3, 3, 5]
+
+// 使用类型约束以便检查相等性 
+func checkIfEqual<T: Equatable>(_ first: T, _ second: T) -> Bool {
+    return first == second
+}
+
+// protocol 不可以用泛型 但是可以使用 关联类型
+protocol IteratorProtocol {
+    associatedtype Element
+    mutating func next() -> Element?
+}
+
+struct StackIterator<T>: IteratorProtocol {
+    typealias Element = T
+    var stack: Stack<T>
+
+    mutating func next() -> Element? {
+        return stack.pop()
+    }
+}
+
+var myStack = Stack<Int> ()
+myStack.push(10)
+myStack.push(20)
+myStack.push(30)
+
+var myStackIterator = StackIterator(stack: myStack)
+while let value = myStackIterator.next() {
+    print("got \(value)")
+}
+```
