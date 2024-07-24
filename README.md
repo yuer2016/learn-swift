@@ -41,7 +41,10 @@
       - [协议组合](#协议组合)
     - [错误处理](#错误处理)
     - [扩展](#扩展)
+    - [协议扩展](#协议扩展)
     - [泛型](#泛型)
+    - [内存管理和ARC](#内存管理和arc)
+    - [自定义运算符](#自定义运算符)
 
 ## 基本抽象
 
@@ -1327,7 +1330,159 @@ protocol Toggleable {
 2. 不可恢复的错误(nonrecoverable error)
 
 ```swift
+enum Token {
+    case number(Int)
+    case plus
+}
 
+class Lexer {
+    enum Error: Swift.Error {
+        case invalidCharacter(Character)
+    }
+
+    let input: String
+    var position: String.Index
+
+    init(input: String) {
+        self.input = input
+        self.position = self.input.startIndex
+    }
+
+    func peek() -> Character? {
+        guard position < input.endIndex else {
+            return nil
+        }
+        return input[position]
+    }
+
+    func advance() {
+        assert(position < input.endIndex, "Cannot advance past endIndex!")
+        position = input.index(after: position)
+    }
+
+    func getNumber() -> Int {
+        var value = 0
+
+        while let nextCharacter = peek() {
+            switch nextCharacter {
+            case "0" ... "9":
+                // another digit - add it into value
+                let digitValue = Int(String(nextCharacter))!
+                value = 10 * value + digitValue
+                advance() // ℃
+            default:
+                // a non-digit - go back to regular lexing
+                return value
+            }
+        }
+        return value
+    }
+
+    func lex() throws -> [Token] {
+        var tokens = [Token]()
+
+        while let nextCharacter = peek() {
+            switch nextCharacter {
+              case "0" ... "9":
+                  let value = getNumber()
+                  tokens.append(.number(value))
+              case "+":
+                  tokens.append(.plus)
+                  advance()
+              case " ":
+                  // just advance to ignore spaces
+                  advance()
+              default:
+                  throw Lexer.Error.invalidCharacter(nextCharacter)
+            }
+        }
+        return tokens
+    }
+}
+
+//----------------------------------------------------------
+
+class Parser {   //Parser这个类
+    enum Error: Swift.Error {
+        case unexpectedEndOfInput
+        case invalidToken(Token)
+    }
+
+    let tokens: [Token]
+    var position = 0
+
+    init(tokens: [Token]) {
+        self.tokens = tokens
+    }
+
+    func getNextToken() -> Token? {
+        guard position < tokens.count else {
+          return nil 
+        }
+        let token = tokens[position]
+        position += 1
+        return token
+    }
+
+    func getNumber() throws -> Int {
+        guard let token = getNextToken() else {
+            throw Parser.Error.unexpectedEndOfInput
+        }
+
+        switch token {
+          case .number(let value):
+              return value
+
+          case .plus:
+              throw Parser.Error.invalidToken(token)
+        }
+    }
+
+    func parse() throws -> Int {
+        // Require a number first.
+        var value = try getNumber()
+
+        while let token = getNextToken() {
+            switch token {
+              // Getting a Plus after a Number is legal.
+              case .plus:
+                  // After a plus, we must get another number.
+                  let nextNumber = try getNumber()
+                  value += nextNumber
+                  // Getting a Number after a Number is not legal.
+              case .number:
+                  throw Parser.Error.invalidToken(token)
+            }
+        }
+        return value
+    }
+}
+
+
+func evaluate(_ input: String) {
+    print("Evaluating: \(input)")
+    let lexer = Lexer(input: input)
+    
+    do {
+        let tokens = try lexer.lex()
+        print("Lexer output: \(tokens)")
+
+        let parser = Parser(tokens: tokens)
+        let result = try parser.parse()
+        print("Parser output: \(result)")
+    } catch Lexer.Error.invalidCharacter(let character) {
+        print("Input contained an invalid character: \(character)")
+    } catch Parser.Error.unexpectedEndOfInput {
+        print("Unexpected end of input during parsing")
+    } catch Parser.Error.invalidToken(let token) {
+        print("Invalid token during parsing: \(token)")
+    } catch {
+        print("An error occurred: \(error)")
+    }
+}
+
+//evaluate("10 + 3 + 5")
+evaluate("10 + 3 + 46")
 ```
 
 Swift 的设计理念是鼓励写安全、易读的代码，它的错误处理系统也一样。
@@ -1422,6 +1577,69 @@ extension Car {
 var c = Car(make: "Ford", model: "Fusion", year: 2013)
 ```
 
+### 协议扩展
+
+```swift
+protocol Exercise {
+  var name: String { get }
+  var caloriesBurned: Double { get }
+  var minutes: Double { get }
+}
+
+struct EllipticalWorkout: Exercise {
+    let name = "Elliptical Workout"
+    let caloriesBurned: Double
+    let minutes: Double
+}
+let ellipticalWorkout = EllipticalWorkout(caloriesBurned: 335, minutes: 30)
+
+struct TreadmillWorkout: Exercise {
+    let name = "Treadmill Workout"
+    let caloriesBurned: Double
+    let minutes: Double
+    let laps: Double
+}
+let runningWorkout = TreadmillWorkout(caloriesBurned: 350, minutes: 25, laps: 10.5)
+// 泛型函数，它的占位类型必须是符合 Exercise 协议的类型
+func caloriesBurnedPerMinute<E: Exercise>(for exercise: E) -> Double {
+    return exercise.caloriesBurned / exercise.minutes
+}
+
+print(caloriesBurnedPerMinute(for: ellipticalWorkout))
+print(caloriesBurnedPerMinute(for: runningWorkout))
+
+// 相当于 java interface default 函数
+extension Exercise {
+    var caloriesBurnedPerMinute: Double {
+        return caloriesBurned / minutes
+    }
+}
+
+// 协议扩展能给任何协议添加方法和计算属性。不过，协议扩展中添加的属性和方法只能使用肯定存在的其他属性和方法
+extension Sequence where Iterator.Element == Exercise {
+    func totalCaloriesBurned() -> Double {
+        var total: Double = 0
+        for exercise in self {
+            total += exercise.caloriesBurned
+        }
+        return total
+    }
+}
+
+// 用协议扩展提供默认实现
+protocol Exercise: CustomStringConvertible {
+    var name: String { get }
+    var caloriesBurned: Double { get }
+    var minutes: Double { get }
+}
+
+extension Exercise {
+    var description: String {
+        return "Exercise(\(name), burned \(caloriesBurned) calories in \(minutes) minutes)"
+    }
+}
+```
+
 ### 泛型
 
 泛型 （generics）让我们写出的类型和函数可以使用对于我们或编译器都未知的类型。
@@ -1496,4 +1714,180 @@ struct Stack<Element>: Sequence {
         }      
     }
 }
+```
+
+### 内存管理和ARC
+
+计算机程序会动态使用内存：程序在运行时动态分配和释放内存。
+Swift 对内存管理的态度相对独特。
+它会自动处理好大部分内存问题，但是并没有使用垃圾回收器（程序语言中自动内存管理的常用工具）。
+与之相反，Swift 使用的是引用计数系统。
+
+值类型（枚举和结构体）的内存分配和管理很简单。
+新建值类型的实例时，系统会自动为实例划出大小合适的内存。
+任何传递实例的动作，包括传递给函数以及存储到属性中，都会创建实例的副本。
+当实例不再存在时，Swift会回收内存。不需要做任何事情来管理值类型的内存。
+
+引用类型（特别是类）的内存管理。
+新建类的实例时，系统会为实例分配内存，跟值类型一样。
+不过，区别在于传递类实例时发生的事情。
+把类实例传递给函数或存储到属性中会对同一块内存创建新的引用，而不是复制实例本身。
+对同一块内存有多个引用意味着，只要任何一个引用修改了类实例，所有的引用就都能看到变化。
+
+Swift 不像 C 那样需要手动管理内存，而是为每个类实例维护一个引用计数 （reference count）。
+这是对组成类实例的内存的引用数量。只要引用计数大于0，实例就会存活。一旦引用计数变成0，实例就会被回收，deinit 方法运行。
+
+自动引用计数 （automatic reference counting，ARC）下，编译器负责分析代码并在所有合适的位置插入保持和释放调用。Swift 也是在 ARC 的基础上构建的。不需要做任何事情来管理类实例的引用计数——编译器会帮你做。
+
+循环强引用就是一种内存泄漏 （memory leak）。应用分配了足够Bob和其资产所需的内存，但是当程序不再需要这些内存后并没有将其还给系统。可以利用弱引用不增加所指向实例的引用计数的特性解决这个问题。
+
+弱引用有两个条件：
+
+1. 弱引用必须用var 声明，不能用let ；
+2. 弱引用必须声明为可空类型。
+
+```swift
+class Asset: CustomStringConvertible {
+    let name: String
+    let value: Double
+    weak var owner: Person?
+}
+```
+
+还有一种更复杂的情况会产生循环强引用：在闭包中捕获 self
+
+```swift
+
+class Accountant {
+    typealias NetWorthChanged = (Double) -> Void
+
+    var netWorthChangedHandler: NetWorthChanged? = nil
+    var netWorth: Double = 0.0 {
+        didSet {
+            netWorthChangedHandler?(netWorth)
+        }
+    }
+
+    func gained(_ asset: Asset, completion: () -> Void) {
+        netWorth += asset.value
+        completion()
+    }
+}
+
+class Asset : CustomStringConvertible {
+    let name: String
+    let value: Double
+    weak var owner: Person?
+
+    var description: String {
+        if let actualOwner = owner {
+            return "Asset(\(name), worth \(value), owned by \(actualOwner))"
+        } else {
+            return "Asset(\(name), worth \(value), not owned by anyone)"
+        }
+    }
+
+    init(name: String, value: Double) {
+        self.name = name
+        self.value = value
+    }
+
+    deinit {
+        print("\(self) is being deallocated")
+    }
+}
+
+class Person : CustomStringConvertible {
+    let name: String
+    let accountant = Accountant()
+    var assets = [Asset]()
+
+    var description: String {
+        return "Person(\(name))"
+    }
+
+    init(name: String) {
+        self.name = name
+        // 闭包能捕获在闭合作用域中定义的变量。
+        // 默认情况下，闭包的捕获是通过对用到的变量的强引用实现的
+        // Accountant 实际上有 对Person 的强引用！
+        // Accountant 的netWorthChangedHandler 通过自己的 Person 的 self 强引用了这个 Person
+        accountant.netWorthChangedHandler = {
+            [weak self] netWorth in
+
+            self?.netWorthDidChange(to: netWorth) ?? ()
+            return
+        }
+    }
+
+    deinit {
+        print("\(self) is being deallocated")
+    }
+
+    func takeOwnership(of asset: Asset) {
+        accountant.gained(asset) {
+            asset.owner = self
+            assets.append(asset)
+        }
+    }
+
+    func netWorthDidChange(to netWorth: Double) {
+        print("The net worth of \(self) is now \(netWorth)")
+    }
+
+    // @escaping 逃逸表示传递给一个函数的闭包可能会在该函数返回后被调用
+    func useNetWorthChangedHandler(handler: @escaping (Double) -> Void) {
+        accountant.netWorthChangedHandler = handler
+    }
+}
+
+var bob: Person? = Person(name: "Bob")
+print("created \(bob)")
+
+var laptop: Asset? = Asset(name: "Shiny Laptop", value: 1_500.0)
+var hat: Asset? = Asset(name: "Cowboy Hat", value: 175.0)
+var backpack: Asset? = Asset(name: "Blue Backpack", value: 45.0)
+
+bob?.useNetWorthChangedHandler { netWorth in
+    print("Bob's net worth is now \(netWorth)")
+}
+bob?.takeOwnership(of: laptop!)
+bob?.takeOwnership(of: hat!)
+
+print("While Bob is alive, hat's owner is \(hat!.owner)")
+bob = nil
+print("the bob variable is now \(bob)")
+print("After Bob is deallocated, hat's owner is \(hat!.owner)")
+
+laptop = nil
+hat = nil
+backpack = nil
+```
+
+### 自定义运算符
+
+```swift
+class Person {
+    var name: String
+    weak var spouse: Person?
+
+    init(name: String, spouse: Person?) {
+        self.name = name
+        self.spouse = spouse
+    }
+}
+
+let matt = Person(name: "Matt", spouse: nil)
+let drew = Person(name: "Drew", spouse: nil)
+
+infix operator +++
+
+func +++(lhs: Person, rhs: Person) {
+    lhs.spouse = rhs
+    rhs.spouse = lhs
+}
+
+matt +++ drew
+matt.spouse?.name
+drew.spouse?.name
 ```
