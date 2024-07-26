@@ -8,28 +8,28 @@
     - [浮点数](#浮点数)
     - [字符串](#字符串)
     - [可空类型](#可空类型)
-    - [控制流](#控制流)
-      - [if](#if)
-      - [switch](#switch)
-      - [for 循环](#for-循环)
-      - [while 循环](#while-循环)
-    - [容器](#容器)
-      - [数组](#数组)
-      - [字典](#字典)
-      - [Set](#set)
-    - [函数](#函数)
-      - [闭包](#闭包)
-      - [函数作为返回值](#函数作为返回值)
-      - [函数作为参数](#函数作为参数)
-    - [类和方法](#类和方法)
-      - [枚举](#枚举)
-      - [方法](#方法)
-      - [结构体](#结构体)
-      - [类](#类)
-      - [mutating 方法详解](#mutating-方法详解)
-      - [属性](#属性)
-      - [访问控制](#访问控制)
-      - [初始化](#初始化)
+  - [控制流](#控制流)
+    - [if](#if)
+    - [switch](#switch)
+    - [for 循环](#for-循环)
+    - [while 循环](#while-循环)
+  - [容器](#容器)
+    - [数组](#数组)
+    - [字典](#字典)
+    - [Set](#set)
+  - [函数](#函数)
+    - [闭包](#闭包)
+    - [函数作为返回值](#函数作为返回值)
+    - [函数作为参数](#函数作为参数)
+  - [类和方法](#类和方法)
+    - [枚举](#枚举)
+    - [方法](#方法)
+    - [结构体](#结构体)
+    - [类](#类)
+    - [mutating 方法详解](#mutating-方法详解)
+    - [属性](#属性)
+    - [访问控制](#访问控制)
+    - [初始化](#初始化)
   - [值类型与引用类型](#值类型与引用类型)
     - [值类型](#值类型)
     - [引用类型](#引用类型)
@@ -39,12 +39,12 @@
     - [协议](#协议)
       - [协议继承](#协议继承)
       - [协议组合](#协议组合)
-    - [错误处理](#错误处理)
-    - [扩展](#扩展)
-    - [协议扩展](#协议扩展)
     - [泛型](#泛型)
-    - [内存管理和ARC](#内存管理和arc)
-    - [自定义运算符](#自定义运算符)
+  - [错误处理](#错误处理)
+  - [扩展](#扩展)
+    - [协议扩展](#协议扩展)
+  - [内存管理和ARC](#内存管理和arc)
+  - [自定义运算符](#自定义运算符)
 
 ## 基本抽象
 
@@ -189,9 +189,9 @@ var upCaseErrorDescription = errorDescription?.uppercased()
 let description = upCaseErrorDescription ?? "No error"
 ```
 
-### 控制流
+## 控制流
 
-#### if
+### if
 
 ```swift
 var population: Int = 5422
@@ -212,7 +212,7 @@ if population < 10000 {
 message = population < 10000 ? "\(population) is a small town!" : "\(population) is pretty big!"
 ```
 
-#### switch
+### switch
 
 ```swift
 var statusCode: Int = 404
@@ -281,7 +281,7 @@ if case 18...35 = age, age >= 21 {
 }
 ```
 
-#### for 循环
+### for 循环
 
 ```swift
 var myFirstInt: Int = 0
@@ -297,7 +297,7 @@ for i in 1...100 where i % 3 == 0 {
 }
 ```
 
-#### while 循环
+### while 循环
 
 ```swift
 var i = 1
@@ -314,9 +314,9 @@ repeat {
 
 ```
 
-### 容器
+## 容器
 
-#### 数组
+### 数组
 
 数组是值的有序集合。
 数组的每个位置都用索引标记，任何值都可以在数组中出现多次。
@@ -379,7 +379,7 @@ let lunches = [
   ]
 ```
 
-#### 字典
+### 字典
 
 ```swift
 var dict1: Dictionary<String, Double> = [:]
@@ -424,7 +424,7 @@ let album = ["Diet Roast Beef": 268,
              "Track 4": 221]
 ```
 
-#### Set
+### Set
 
 ```swift
 var groceryBag = Set<String>()
@@ -454,7 +454,7 @@ let roommatesSecondBag = Set(["Grapes", "Honey"])
 let disjoint = yourSecondBag.isDisjoint(with: roommatesSecondBag)
 ```
 
-### 函数
+## 函数
 
 函数 （function）是一组有名字的代码，用来完成某个特定的任务。函数的名字描述了其执行的任务。
 
@@ -591,7 +591,7 @@ func printGreeting() -> Void {
 }
 ```
 
-#### 闭包
+### 闭包
 
 闭包 （closure）是在应用中完成特定任务的互相分离的功能组。
 
@@ -645,7 +645,7 @@ let anotherGrowBy = growBy
 anotherGrowBy(500) // totalPopulation现在是7922
 ```
 
-#### 函数作为返回值
+### 函数作为返回值
 
 ```swift
 let volunteerCounts = [1,3,40,32,2,53,77,13]
@@ -665,7 +665,7 @@ stoplights = townPlanByAddingLightsToExistingLights(4, stoplights)
 print("Knowhere has \(stoplights) stoplights.")
 ```
 
-#### 函数作为参数
+### 函数作为参数
 
 ```swift
 let volunteerCounts = [1,3,40,32,2,53,77,13]
@@ -724,9 +724,9 @@ let totalProjection = projectedPopulations.reduce(0) {
 }
 ```
 
-### 类和方法
+## 类和方法
 
-#### 枚举
+### 枚举
 
 ```swift
 // 定义枚举的方式是在 enum 关键字后跟枚举的名字。
@@ -783,7 +783,7 @@ if let myAlignment = TextAlignment(rawValue: myRawValue) {
 
 ```
 
-#### 方法
+### 方法
 
 方法是和类型关联的函数。
 
@@ -840,7 +840,7 @@ var squareShape = ShapeDimensions.square(side: 10.0)
 var rectShape = ShapeDimensions.rectangle(width: 5.0, height: 10.0)
 ```
 
-#### 结构体
+### 结构体
 
 结构体 （struct）是把相关数据块组合在一起放在内存中的一种类型。当需要把数据组合为一种通用类型时就可以用结构体。
 
@@ -863,7 +863,7 @@ var myTown = Town()
 myTown.printDescription()
 ```
 
-#### 类
+### 类
 
 跟结构体类似，类可以用来为抽象成一个通用类型的相关数据建模
 
@@ -906,13 +906,13 @@ class Zombie: Monster {
 }
 ```
 
-#### mutating 方法详解
+### mutating 方法详解
 
 mutating 方法的第一个参数是self ，并以 inout 的形式传入。
 因为值类型在传递的时候会被复制，所以对于非 mutating 方法，self 其实是值的副本。
 为了进行修改，self 需要被声明为 inout ，而 mutating 就是 Swift 编译器让你完成这个任务的工具。
 
-#### 属性
+### 属性
 
 属性能够把值关联到类型上，从而模拟类型所表示的实体的性质。
 属性的值可以是常量，也可以是变量。
@@ -1024,7 +1024,7 @@ class Zombie: Monster {
 }
 ```
 
-#### 访问控制
+### 访问控制
 
 | 访问层级       | 描述                                                             |
 | -------------- | ---------------------------------------------------------------- |
@@ -1039,7 +1039,7 @@ class Zombie: Monster {
 internal private(set) var isFallingApart = false
 ```
 
-#### 初始化
+### 初始化
 
 初始化是设置类型实例的操作，包括给每个存储属性初始值，以及一些其他准备工作。
 初始化方法 （initializer）能在创建实例的同时为其赋予合适的值。
@@ -1322,7 +1322,83 @@ protocol Toggleable {
 
 协议组合的语法用关键字 & 中缀操作符告诉编译器，把多个协议组合成了单个的需求。
 
-### 错误处理
+### 泛型
+
+泛型 （generics）让我们写出的类型和函数可以使用对于我们或编译器都未知的类型。
+Swift 用到的很多内建类型（包括可空类型、数组和字典）都是用泛型实现的。
+
+```swift
+struct Stack<Element> {
+    var items = [Element]()
+
+    mutating func push(_ newItem: Element) {
+        items.append(newItem)
+    }
+
+    mutating func pop() -> Element? {
+        guard !items.isEmpty else { 
+          return nil
+        }
+        return items.removeLast()
+    }
+}
+
+// 泛型方法
+func myMap<T,U>(_ items: [T], _ f: (T) -> (U)) -> [U] {
+    var result = [U]()
+
+    for item in items {
+        result.append(f(item))
+    }
+
+    return result
+}
+
+let strings = ["one", "two", "three"]
+let stringLengths = myMap(strings) { $0.characters.count }
+print(stringLengths) // 打印[3, 3, 5]
+
+// 使用类型约束以便检查相等性 
+func checkIfEqual<T: Equatable>(_ first: T, _ second: T) -> Bool {
+    return first == second
+}
+
+// protocol 不可以用泛型 但是可以使用 关联类型
+protocol IteratorProtocol {
+    associatedtype Element
+    mutating func next() -> Element?
+}
+
+struct StackIterator<T>: IteratorProtocol {
+    typealias Element = T
+    var stack: Stack<T>
+
+    mutating func next() -> Element? {
+        return stack.pop()
+    }
+}
+
+var myStack = Stack<Int> ()
+myStack.push(10)
+myStack.push(20)
+myStack.push(30)
+
+var myStackIterator = StackIterator(stack: myStack)
+while let value = myStackIterator.next() {
+    print("got \(value)")
+}
+
+struct Stack<Element>: Sequence {
+  mutating func pushAll<S: Sequence>(_ sequence: S)
+    where S.Iterator.Element == Element {
+        for item in sequence {
+          self.push(item)
+        }      
+    }
+}
+```
+
+## 错误处理
 
 可能发生的错误分为两大类：
 
@@ -1496,7 +1572,7 @@ Swift 还需要把所有可能失败的函数调用用 try 标记。
 1. 不需要修改函数的 API 就可以随意添加潜在的 Error 。
 2. 在用 catch 处理错误时，必须总是准备好处理未知的错误类型。
 
-### 扩展
+## 扩展
 
 Swift 提供一个叫扩展 （extension）的特性, 扩展能让你给已有的类型添加功能，可以用来扩展结构体、枚举和类。
 对类型的扩展支持以下几种能力：
@@ -1640,83 +1716,7 @@ extension Exercise {
 }
 ```
 
-### 泛型
-
-泛型 （generics）让我们写出的类型和函数可以使用对于我们或编译器都未知的类型。
-Swift 用到的很多内建类型（包括可空类型、数组和字典）都是用泛型实现的。
-
-```swift
-struct Stack<Element> {
-    var items = [Element]()
-
-    mutating func push(_ newItem: Element) {
-        items.append(newItem)
-    }
-
-    mutating func pop() -> Element? {
-        guard !items.isEmpty else { 
-          return nil
-        }
-        return items.removeLast()
-    }
-}
-
-// 泛型方法
-func myMap<T,U>(_ items: [T], _ f: (T) -> (U)) -> [U] {
-    var result = [U]()
-
-    for item in items {
-        result.append(f(item))
-    }
-
-    return result
-}
-
-let strings = ["one", "two", "three"]
-let stringLengths = myMap(strings) { $0.characters.count }
-print(stringLengths) // 打印[3, 3, 5]
-
-// 使用类型约束以便检查相等性 
-func checkIfEqual<T: Equatable>(_ first: T, _ second: T) -> Bool {
-    return first == second
-}
-
-// protocol 不可以用泛型 但是可以使用 关联类型
-protocol IteratorProtocol {
-    associatedtype Element
-    mutating func next() -> Element?
-}
-
-struct StackIterator<T>: IteratorProtocol {
-    typealias Element = T
-    var stack: Stack<T>
-
-    mutating func next() -> Element? {
-        return stack.pop()
-    }
-}
-
-var myStack = Stack<Int> ()
-myStack.push(10)
-myStack.push(20)
-myStack.push(30)
-
-var myStackIterator = StackIterator(stack: myStack)
-while let value = myStackIterator.next() {
-    print("got \(value)")
-}
-
-struct Stack<Element>: Sequence {
-  mutating func pushAll<S: Sequence>(_ sequence: S)
-    where S.Iterator.Element == Element {
-        for item in sequence {
-          self.push(item)
-        }      
-    }
-}
-```
-
-### 内存管理和ARC
+## 内存管理和ARC
 
 计算机程序会动态使用内存：程序在运行时动态分配和释放内存。
 Swift 对内存管理的态度相对独特。
@@ -1864,7 +1864,7 @@ hat = nil
 backpack = nil
 ```
 
-### 自定义运算符
+## 自定义运算符
 
 ```swift
 class Person {

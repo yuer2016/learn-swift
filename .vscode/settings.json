@@ -1,0 +1,20 @@
+{
+  //vscode默认启用了根据文件类型自动设置tabsize的选项
+  "editor.detectIndentation": false,
+  //重新设定tabsize
+  "editor.tabSize": 2,
+  //每次保存的时候自动格式化 
+  "editor.formatOnSave": true,
+  //设置主题
+  "workbench.colorTheme": "Solarized Dark",
+  //设置字体
+  "editor.fontFamily": "Source Code Pro",
+  "files.autoSave": "onFocusChange",
+  "[markdown]": {
+    "editor.quickSuggestions": {
+      "comments": "on",
+      "strings": "on",
+      "other": "on"
+    }
+  }
+}

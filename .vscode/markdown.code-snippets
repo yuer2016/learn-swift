@@ -1,0 +1,12 @@
+{
+  "Insert a simple table": {
+    "prefix": "table",
+    "scope": "markdown",
+    "body": [
+      "|${0:title} |  |",
+      "| - | - |",
+      "|   |   |"
+    ],
+    "description": "Insert a simple table"
+  }
+}
